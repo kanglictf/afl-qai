@@ -3,9 +3,20 @@ QEMU with augmented instrumentation for afl-fuzz
 =========================================================
 
 This directory contains the patches of augmented instrumentation.
+
 These patches include two examples: 1) providing "partial matching" feedback at each jz and jnz comparison, and 2) providing "close-to-zero" feedback to idiv instructions. 
 
-These augmented instrumentation assumed a linear relationship between input and the branch condition.
+To Try it
+------------
+Just run the script build_qemu_support.sh as in the original afl qemu mode.
 
-The benefit of augmented instrumentation comes at the cost of higher density in AFL shared memory.  This might becomes an issue for large program, and selective use of augmented instrumentation is recommended. 
 
+A Few Notes
+------------
+* These augmented instrumentation assumed a linear relationship between input and variabes in branch conditions.
+
+* The benefit of augmented instrumentation comes at the cost of higher density in AFL shared memory.  This might become an issue for large program, and selective use of augmented instrumentation should be further studied. 
+
+* One way to control the cost is by selecting the granularity of partial matching feedback. i.e. should a "virutal" new path considered for how many bits matched. Currently the granularity is hard coded in the implementation (measured by bytes in brcond, and bits in divz). 
+
+* The current implementation modifies the i386/translate.c for passing the eip information.  This is not strictly necessary.  For an architecture independent approach, other tcg context information can be used as fake edge information.
