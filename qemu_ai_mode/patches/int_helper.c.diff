@@ -1,0 +1,42 @@
+--- qemu-2.3.0/target-i386/int_helper.c	2015-04-27 10:08:27.000000000 -0400
++++ qemu-2.3.0/target-i386/int_helper.c	2016-11-21 00:48:09.460410495 -0500
+@@ -21,6 +21,13 @@
+ #include "qemu/host-utils.h"
+ #include "exec/helper-proto.h"
+ 
++extern abi_ulong afl_entry_point, 
++          afl_start_code,  
++          afl_end_code;    
++
++extern unsigned char *afl_area_ptr;
++static uint64_t bitmap_size = 1<<16;
++
+ //#define DEBUG_MULDIV
+ 
+ /* modulo 9 table */
+@@ -394,6 +401,25 @@
+ {
+     uint64_t r0, r1;
+ 
++    //Augmented Instrumentation for DIVZ feedback
++    uint64_t pc = env->eip;
++    uint64_t gap;
++    uint64_t fake_edge;
++    uint64_t mask = 0x8000000000000000;
++    uint64_t i = 0;
++
++    if (pc > afl_start_code && pc < afl_end_code) {
++        if (afl_area_ptr) {
++	    gap = (t0&0x8000000000000000)? 0-t0 : t0;
++	    while (!(gap&mask) && i<64) { 
++		mask = mask>>1;
++		i++;
++		fake_edge = i*pc % bitmap_size;
++		afl_area_ptr[fake_edge]++;	
++	    }
++        }
++    }
++
+     if (t0 == 0) {
+         raise_exception(env, EXCP00_DIVZ);
+     }
